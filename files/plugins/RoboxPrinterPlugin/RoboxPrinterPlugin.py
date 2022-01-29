@@ -1,7 +1,7 @@
 ####################################################################
-# Dremel Ideabuilder 3D20, 3D40 & 3D45 plugin for Ultimaker Cura
-# A plugin to enable Cura to write .g3drem files for
-# the Dremel IdeaBuilder 3D20, 3D40 & 3D45
+# Robox plugin for Ultimaker Cura
+# A plugin to enable Cura to write custom gcode files for
+# the Robox printers
 #
 # Written by Tim Schoenmackers
 # Based on the GcodeWriter plugin written by Ultimaker
@@ -15,17 +15,13 @@
 ####################################################################
 
 import os  # for listdir
-import platform  # for platform.system
 import os.path  # for isfile and join and path
 import sys
 import zipfile  # For unzipping the printer files
-import shutil  # For deleting plugin directories
 import stat  # For setting file permissions correctly
 import re  # For escaping characters in the settings.
 import json
 import copy
-import struct
-import time
 
 from . import _version
 
@@ -101,7 +97,7 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
         needs_to_be_installed = False
 
         if self.isInstalled():
-            Logger.log("i", "All Dremel files are installed")
+            Logger.log("i", "All Robox files are installed")
 
             # if the version isn't the same, then force installation
             if not self.versionsMatch():
@@ -141,7 +137,7 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
         Logger.log("d", "Thumbnail taken")
 
     def createPreferencesWindow(self):
-        path = os.path.join(PluginRegistry.getInstance().getPluginPath(self.getPluginId()), "DremelPluginprefs.qml")
+        path = os.path.join(PluginRegistry.getInstance().getPluginPath(self.getPluginId()), "RoboxPluginprefs.qml")
         Logger.log("i", "Creating RoboxPrinterPlugin preferences UI " + path)
         self._preferences_window = self._application.createQmlComponent(path, {"manager": self})
 
@@ -305,17 +301,15 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
     ## Prompt the user that the old  plugin is installed
     ######################################################################
     def PromptToUninstallOldPluginFiles(self):
+        Logger.log("i", "PromptToUninstallOldPluginFiles not implemented")
         # currently this will prompt the user to uninstall the old plugin, but not actually uninstall anything
-        dremel3D20PluginDir = os.path.join(Resources.getStoragePath(Resources.Resources), "plugins", "Dremel3D20")
-        if os.path.isdir(dremel3D20PluginDir):
-            message = Message(catalog.i18nc("@warning:status",
-                                            "Please uninstall the Robox old plugin.\n\t• The Robox Printer Plugin replaces the older Robox plugin.\n\t• Currently both are installed. "))
-            message.show()
+        # if os.path.isdir(robox_plugin_dir):
+        #     message = Message(catalog.i18nc("@warning:status",
+        #                                     "Please uninstall the Robox old plugin.\n\t• The Robox Printer Plugin replaces the older Robox plugin.\n\t• Currently both are installed. "))
+        #     message.show()
 
     ######################################################################
-    ##  Performs the writing of the dremel header and gcode - for a technical
-    ##  breakdown of the dremel g3drem file format see the following page:
-    ##  https://github.com/timmehtimmeh/Cura-Dremel-3D20-Plugin/blob/master/README.md#technical-details-of-the-g3drem-file-format
+    ##  Performs the writing of the gcode for robox printers it should check active_printer and convert gcode
     ######################################################################
     def write(self, stream, nodes, mode=MeshWriter.OutputMode.BinaryMode):
         try:
@@ -396,8 +390,7 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
 
             bHeatedBed = False
             active_printer = global_container_stack.definition.getName()
-            if active_printer == "Dremel3D45":
-                bHeatedBed = True
+
             bSupportEnabled = active_machine_stack.getProperty("support_enable", "value")
 
             # set the information flag bits
@@ -410,28 +403,6 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
             # set layer height
             g3dremHeader.setLayerHeight(int(global_container_stack.getProperty("layer_height", "value") * 1000))
 
-            # finally, write the header to the file
-            if not g3dremHeader.writeHeader(stream):
-                Logger.log("e", "Robox Plugin - Error Writing Dremel Header.")
-                return False
-            Logger.log("i", "Robox Plugin - Finished Writing Dremel Header.")
-
-            # now that the header is written, write the ascii encoded gcode
-
-            # write a comment in the gcode with  the Plugin name, version number, printer, and quality name to the g3drem file
-            quality_name = global_container_stack.quality.getName()
-            if quality_name is None:
-                quality_name = "unknown"
-
-            # warn the user if they save out a PETG file at ultra quality
-            if ("Ultra" in quality_name) and ("PETG" in materialName) and ("3D45" in active_printer):
-                message = Message(catalog.i18nc("@warning:status",
-                                                "WARNING: Printing Ultra quality with Dremel PETG is currently unreliable"))
-                message.show()
-
-            stream.write(
-                "\n;Cura-Dremel-Printer-Plugin version {}\n;Printing on: {}\n;Using material: \"{}\"\n;Quality: \"{}\"\n".format(
-                    RoboxPrinterPlugin.version, active_printer, materialName, quality_name).encode())
 
             # after the plugin info - write the gcode from Cura
             active_build_plate = self._application.getMultiBuildPlateModel().activeBuildPlate
