@@ -90,6 +90,7 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
         self.this_plugin_path = os.path.join(Resources.getStoragePath(Resources.Resources), "plugins",
                                              "RoboxPrinterPlugin", "RoboxPrinterPlugin")
 
+        self._preferences_window = None
         Logger.log("i", "Robox Plugin setting up")
         # Prompt user to uninstall the old plugin, as this one supercedes it
         self.PromptToUninstallOldPluginFiles()
@@ -208,16 +209,25 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
             self.setPreferenceValue("curr_version", "0.0.0")
             # self._application.getPreferences().writeToFile(Resources.getStoragePath(Resources.Preferences, self._application.getApplicationName() + ".cfg"))
 
-        installedVersion = self._application.getPreferences().getValue("RoboxPrinterPlugin/curr_version")
+        installed_version = self._application.getPreferences().getValue("RoboxPrinterPlugin/curr_version")
+        Logger.log("i",
+                   "Robox Plugin checking versions: " + installed_version + " == " + RoboxPrinterPlugin.version)
 
-        if StrictVersion(installedVersion) == StrictVersion(RoboxPrinterPlugin.version):
-            # if the version numbers match, then return true
-            Logger.log("i",
-                       "Robox Plugin versions match: " + installedVersion + " matches " + RoboxPrinterPlugin.version)
-            return True
-        else:
-            Logger.log("i",
-                       "Robox Plugin - The currently installed version: " + installedVersion + " doesn't match this version: " + RoboxPrinterPlugin.version)
+        try:
+            if StrictVersion(installed_version) == StrictVersion(RoboxPrinterPlugin.version):
+                # if the version numbers match, then return true
+                Logger.log("i",
+                           "Robox Plugin versions match: " + installed_version + " matches " + RoboxPrinterPlugin.version)
+                return True
+            else:
+                Logger.log("i",
+                           "Robox Plugin - The currently installed version: " + installed_version + " doesn't match this version: " + RoboxPrinterPlugin.version)
+                return False
+        except:  # Installing a new plugin should never crash the application so catch any random errors and show a message.
+            Logger.logException("w", "An exception occurred in Robox Printer Plugin while checking version " + installed_version)
+            message = Message(catalog.i18nc("@warning:status",
+                                            "Robox Printer Plugin experienced an error while checking version " + installed_version))
+            message.show()
             return False
 
     ######################################################################
@@ -225,6 +235,7 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
     ## Return True if all files are installed, false if they are not
     ######################################################################
     def isInstalled(self):
+        Logger.log("i", "Robox Plugin checking instalation files")
         robox_dual_def_file = os.path.join(Resources.getStoragePathForType(Resources.Resources), "definitions",
                                            "CEL_Robox_Dual.def.json")
         robox_dual_extruder1 = os.path.join(Resources.getStoragePathForType(Resources.Resources), "extruders",
@@ -312,6 +323,7 @@ class RoboxPrinterPlugin(QObject, MeshWriter, Extension):
     ##  Performs the writing of the gcode for robox printers it should check active_printer and convert gcode
     ######################################################################
     def write(self, stream, nodes, mode=MeshWriter.OutputMode.BinaryMode):
+        Logger.log("e", "Robox Plugin write called.")
         try:
             if mode != MeshWriter.OutputMode.BinaryMode:
                 Logger.log("e", "Robox Plugin does not support non-binary mode.")
