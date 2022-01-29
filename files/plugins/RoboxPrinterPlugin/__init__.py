@@ -10,9 +10,9 @@ def getMetaData():
     return {
         "mesh_writer": {
             "output": [{
-                "extension": "g3drem",
-                "description": catalog.i18nc("@item:inlistbox", "g3drem File"),
-                "mime_type": "application/x-g3drem",
+                "extension": "rbcode",
+                "description": catalog.i18nc("@item:inlistbox", "rbcode File"),
+                "mime_type": "application/x-rbcode",
                 "mode": RoboxPrinterPlugin.RoboxPrinterPlugin.OutputMode.BinaryMode
             }]
         }
