@@ -48,4 +48,5 @@ jobs:
           name: Cura-Robox-Plugin-${{ steps.get_version.outputs.VERSION }}
           path: artifact
           retention-days: 7
-  
+
+#  todo check if event is a tag and create a release
