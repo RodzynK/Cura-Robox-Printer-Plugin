@@ -1,5 +1,5 @@
 {
-    "id": "CEL_Robox_Extruder_1",
+    "id": "cel_robox_quickfill_extruder_1",
     "version": 2,
     "name": "Extruder 1",
     "inherits": "fdmextruder",
